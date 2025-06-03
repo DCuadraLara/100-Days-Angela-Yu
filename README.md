@@ -1,5 +1,6 @@
 # my-code-vault-dcl
 "My journey through code: daily exercises, challenges, and projects."
 # some of my codes...
-"rockscissorpaper" - A few weeks I take an udemy course, I dont remember well from who it is, but its awesome! I learnt a lot, I made a similar game so it was like give an eye back. In this project from Course
-100 Days of Code, I have made a super duper funny game were IA always wins you! haha its joke, Im just bad. Its another practice of conditionals, some ASCII art inside it, and combine some random on it.
+"Rock, Scissors, Paper" – A few weeks ago, I took an Udemy course. I don't remember exactly who the instructor was, but it was awesome! I learned a lot. I had already made a similar game before, so it felt like revisiting an old project.
+In the 100 Days of Code course, I created a super fun game where the AI always wins! Haha, just kidding — I'm just bad at it.
+It's another great practice for conditionals, includes some ASCII art, and adds a bit of random directory too.
