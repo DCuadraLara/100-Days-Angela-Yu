@@ -79,6 +79,17 @@ elif ia_number == 2:
 ''')
 
 # win conditions
+winning_matrix = [
+    ["DRAW!", "IA WIN!", "PLAYER 01 WIN!"],
+    ["PLAYER 01 WIN!", "DRAW!", "IA WIN!"],
+    ["IA WIN!", "PLAYER 01 WIN!", "DRAW!"]
+]
+
+# Resultado usando matriz
+result = winning_matrix[player_choice][ia_number]
+print(result)
+"""
+# win conditions
 if ia_number == 0:
     if player_choice != 0:
         if player_choice == 1:
@@ -105,3 +116,4 @@ elif ia_number == 2:
             print("IA WIN!")
     else:
         print("DRAW!")
+"""
