@@ -15,10 +15,11 @@ def highest_bidder(bidding_dictionary):
 while True:
     name = input("Introduce your name: ")
     bid = int(input("Introduce your budget: "))
-
+    
     secret_auction[name] = bid # Assign key to value into dictionary
 
     reset = input("There are more users bid? Y/N: ").lower()
+    clear_screen()
     if reset != "y":
         break
 
