@@ -6,7 +6,7 @@ A collection of mini-projects and exercises from my learning path in Python, mos
 
 ---
 
-## 🎮 Rock, Scissors, Paper
+## 🎮 Rock, Scissors, Paper 
 
 A few weeks ago, I took a Udemy course. I don't remember exactly who the instructor was, but it was awesome! I had already made a similar game before, so it felt like revisiting an old project.
 
@@ -15,14 +15,20 @@ It was a great opportunity to practice conditionals, use ASCII art, and play aro
 
 ---
 
-## 🎮 Hangman 8-bit Edition 🧱🕹️
+## 🎮 Hangman 8-bit Edition 🧱🕹️ 
 
 Today, after a few exercises with a robot in a maze and some other fun stuff, I ended up making a Hangman game!  
 Our little guy is trying to survive us. We added some loops, conditionals, and just rolled with the code.
 
 ---
 
-## 🛡️ Caesar Cipher
+## 🛡️ Caesar Cipher 
 
 This one was pretty fun — I built a basic Caesar cipher that shifts letters to encode or decode messages. It was a good exercise to practice loops, indexing, and modular arithmetic.  
 Also made sure it **respects spaces** and symbols so you can write full sentences. Clean and simple.
+
+## 🕵️‍♂️ Secret Auction 
+
+A simple Python script that simulates a secret auction game.  
+Users enter their name and bid amount, and the program keeps track of all entries using a dictionary.  
+At the end, it determines who made the highest bid and declares the winner.
