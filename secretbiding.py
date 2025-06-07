@@ -8,10 +8,8 @@ def highest_bidder(bidding_dictionary):
         if bid_amount > top_bid:
             top_bid = bid_amount
             winner = bidder
-        else:
-            pass
 
-    print(f"The winner is {winner} with the bid amount of {top_bid}")
+    print(f"\n🏆 The winner is {winner} with a bid of ${top_bid}!")
 
 
 while True:
@@ -25,4 +23,3 @@ while True:
         break
 
 highest_bidder(secret_auction)
-
