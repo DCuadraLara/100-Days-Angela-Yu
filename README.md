@@ -27,8 +27,22 @@ Our little guy is trying to survive us. We added some loops, conditionals, and j
 This one was pretty fun — I built a basic Caesar cipher that shifts letters to encode or decode messages. It was a good exercise to practice loops, indexing, and modular arithmetic.  
 Also made sure it **respects spaces** and symbols so you can write full sentences. Clean and simple.
 
+---
+
 ## 🕵️‍♂️ Secret Auction 
 
 A simple Python script that simulates a secret auction game.  
 Users enter their name and bid amount, and the program keeps track of all entries using a dictionary.  
 At the end, it determines who made the highest bid and declares the winner.
+
+---
+
+## 🧮 Chain Calculator
+
+A simple Python script that simulates a basic calculator with operation chaining.
+The user enters two numbers and selects an operation (+, -, *, /).
+After the result is displayed, the user can choose to continue calculating with the result or start over.
+The calculator handles multiple consecutive operations and ensures a smooth and interactive experience.
+
+---
+
