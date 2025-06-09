@@ -4,6 +4,7 @@ import random
 cards = [11, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10]
 croupier_cards = []
 player_cards = []
+player_money = 1000
 
 # Functions definitions
 def initial_deal():
@@ -14,17 +15,17 @@ def initial_deal():
 
 
 def get_player_cards():
-    random_player =+ random.choice(cards)
+    random_player = random.choice(cards)
     player_cards.append(random_player)
 
 
 def get_croupier_cards():
-    random_croupier =+ random.choice(cards)
+    random_croupier = random.choice(cards)
     croupier_cards.append(random_croupier)
 
 
-def sum_cards_croupier(total_croupier):
-    while total_croupier < 17:
+def sum_cards_croupier():
+    while sum(croupier_cards) < 17:
         get_croupier_cards()
     print("...Croupier Stay...")
 
@@ -39,27 +40,38 @@ def as_swicth_check():
             print("AS NOW IT'S 11")
 
 
+def money_check(player_money):
+    if player_money <= 0:
+        print("* YOU LOST ALL YOUR MONEY *")
+        return True
+    return False
+
+
 def _main_():
-    for _ in player_cards:
+    while True:
         total_player_card = sum(player_cards)
         total_croupier_card = sum(croupier_cards)
+
+        # Total money check
+        if money_check(player_money):
+            break
 
         # count check for both.
         if total_player_card > 21:
             break
-        if total_croupier_card > 21:
+        elif total_croupier_card > 21:
             break
-
         else:
             ask_card = input("*CARD*..........*STAY*\n\n").lower()
             if ask_card == "card":
                 get_player_cards()
+                total_player_card = sum(player_cards)
                 as_swicth_check()
                 print(total_player_card) # just for test
-                print(f"Your cards are {player_cards}")
+                print(f"Your cards are {player_cards} and the total amount is: {sum(player_cards)} ")
                 print(f"Croupier cards are [{croupier_cards[0]}, x]")
             else: # Stay
-                sum_cards_croupier(total_croupier_card)
+                sum_cards_croupier()
                 break
 
 
@@ -67,6 +79,21 @@ def _main_():
 print("*** Welcome to our blackjack game! ***")
 input("Press any key to start the game :=) ")
 while True:
+    actual_bet = input("Please select the amount you want to bet on this round:"
+                           "* 50 *  * 100 *  * 250 *  * 500 *  * All in * \n\n").lower()
+
+    if actual_bet == "all in":
+        actual_bet = player_money
+    else:
+        try:
+            actual_bet = int(actual_bet)
+            if actual_bet not in [50, 100, 250, 500] or actual_bet > player_money:
+                print("Invalid bet, try again")
+                continue
+        except ValueError:
+            print("Invalid bet, try again")
+            continue
+
     print("\n.-.-.-....shuffling.-.--.-.\n")
 
     initial_deal()
@@ -75,19 +102,29 @@ while True:
     print(f"Croupier cards are [{croupier_cards[0]}, x]")
     _main_()
 
+    if sum(player_cards) > 21:
+        print(f"\nPlayer lost with {sum(player_cards)}! Croupier wins.")
+        player_money -= actual_bet
+        continue
+
     # Win conditions
     if sum(player_cards) == sum(croupier_cards):
-        print(f"\n\n\nYour cards are {player_cards}")
-        print(f"Croupier cards are {croupier_cards}")
+        print(f"\n\n\nYour cards are {player_cards} and the total is {sum(player_cards)} ")
+        print(f"Croupier cards are {croupier_cards} and the total is {sum(croupier_cards)} ")
         print("*** DRAW! ***")
+        print(f"Your actual money is: {player_money} ")
     elif sum(player_cards) > sum(croupier_cards) and sum(player_cards) < 21:
-        print(f"\n\n\nYour cards are {player_cards}")
-        print(f"Croupier cards are {croupier_cards}")
-        print("*** DEALER WIN! ***")
+        print(f"\n\n\nYour cards are {player_cards} and the total is {sum(player_cards)} ")
+        print(f"Croupier cards are {croupier_cards} and the total is {sum(croupier_cards)} ")
+        print("*** PLAYER WIN! ***")
+        player_money += actual_bet
+        print(f"Your actual money is: {player_money} ")
     else:
-        print(f"\n\n\nYour cards are {player_cards}")
-        print(f"Croupier cards are {croupier_cards}")
+        print(f"\n\n\nYour cards are {player_cards} and the total is {sum(player_cards)} ")
+        print(f"Croupier cards are {croupier_cards} and the total is {sum(croupier_cards)} ")
         print("*** CROUPIER WIN! ***")
+        player_money -= actual_bet
+        print(f"Your actual money is: {player_money} ")
 
     reset = input("\nNew game?... Y/N\n").lower()
     if reset != "y":
