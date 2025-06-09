@@ -46,3 +46,7 @@ The calculator handles multiple consecutive operations and ensures a smooth and 
 
 ---
 
+🃏 Blackjack Game
+A simple Python script that simulates a terminal-based Blackjack game. The player starts with a fixed amount of money and can place bets in each round. Cards are drawn automatically for both the player and the croupier (dealer), with logic to manage hitting, staying, and calculating winners.
+
+---
