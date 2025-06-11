@@ -50,3 +50,10 @@ The calculator handles multiple consecutive operations and ensures a smooth and 
 A simple Python script that simulates a terminal-based Blackjack game. The player starts with a fixed amount of money and can place bets in each round. Cards are drawn automatically for both the player and the croupier (dealer), with logic to manage hitting, staying, and calculating winners.
 
 ---
+
+# 🎲 Guess the Number - Python Game
+
+A simple command-line game where the computer randomly selects a number between 1 and 100, and the player has to guess it!
+We got Random number generation between 1 and 100, user input with validation, hints for "Too high" or "Too low", keeps track of number of attempts and Input error handling.
+
+---
