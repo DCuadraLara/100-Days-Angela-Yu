@@ -57,3 +57,15 @@ A simple command-line game where the computer randomly selects a number between 
 We got Random number generation between 1 and 100, user input with validation, hints for "Too high" or "Too low", keeps track of number of attempts and Input error handling.
 
 ---
+
+## 📊 Higher or Lower Game
+
+A simple and fun Python console game where you compare the number of followers between two popular personalities.
+
+Guess who has more followers — if you're right, you earn a point and face a new challenger.  
+Keep going and test your pop culture knowledge until you guess wrong!
+
+🔹 Built with plain Python and a list of custom celebrity data.  
+🔹 Great for practicing basic Python logic, conditionals, and functions.
+
+---
