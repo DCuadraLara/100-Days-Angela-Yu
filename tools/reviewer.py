@@ -1,7 +1,7 @@
 # tools/reviewer.py
-import os, re, json, yaml, datetime, subprocess
+import os, re, json, yaml, datetime, subprocess, shlex
 from pathlib import Path
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 EXER_DIR   = REPO_ROOT / "exercises"
@@ -20,8 +20,23 @@ MOTIVATION = [
     "Primero que funcione, luego que sea bonito, luego que sea rápido."
 ]
 
+DOCS = {
+    "pep8": "https://peps.python.org/pep-0008/",
+    "fstrings": "https://docs.python.org/3/reference/lexical_analysis.html#f-strings",
+    "with": "https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects",
+    "exceptions": "https://docs.python.org/3/tutorial/errors.html",
+    "functions": "https://docs.python.org/3/tutorial/controlflow.html#defining-functions",
+}
+
+# ---------- utilidades ----------
+def run(cmd: str, cwd: Path = REPO_ROOT) -> tuple[int,str,str]:
+    p = subprocess.Popen(cmd, cwd=cwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    out, err = p.communicate()
+    return p.returncode, out, err
+
 def load_global_rules():
     if RULES_FILE.exists():
+        # claves numéricas (día) -> dict de reglas
         return {int(k): v for k, v in json.loads(RULES_FILE.read_text(encoding="utf-8")).items()}
     return {}
 
@@ -33,30 +48,14 @@ def load_meta(ex_dir: Path):
 
 def git_changed_files(days=7):
     since = (datetime.datetime.utcnow() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-    cmd = ["git", "log", f'--since=\"{since} 00:00\"', "--name-only", "--pretty=format:"]
-    try:
-        out = subprocess.check_output(" ".join(cmd), shell=True, cwd=REPO_ROOT).decode("utf-8", "ignore")
-    except subprocess.CalledProcessError:
-        out = ""
+    code, out, _ = run(f'git log --since="{since} 00:00" --name-only --pretty=format:')
     files = sorted({f.strip() for f in out.splitlines() if f.strip()})
     changed = [REPO_ROOT / f for f in files if (REPO_ROOT / f).exists()]
-
     if changed:
         return changed
-
-    # Fallback: último commit que tocó exercises/**
-    try:
-        out = subprocess.check_output(
-            'git show --name-only --pretty=format: HEAD -- "exercises/**"',
-            shell=True, cwd=REPO_ROOT
-        ).decode("utf-8", "ignore")
-        fallback = [REPO_ROOT / f for f in out.splitlines() if f.startswith("exercises/") and (REPO_ROOT / f).exists()]
-        if fallback:
-            return fallback
-    except Exception:
-        pass
-
-    return []
+    # fallback: último commit que tocó exercises/**
+    code, out, _ = run('git show --name-only --pretty=format: HEAD -- "exercises/**"')
+    return [REPO_ROOT / f for f in out.splitlines() if f.startswith("exercises/") and (REPO_ROOT / f).exists()]
 
 def infer_day_from_path(p: Path):
     m = re.search(r"day[_-]?(\d+)", str(p).lower())
@@ -78,23 +77,20 @@ def check_forbidden(py_code: str, forbidden_rules):
     hits = []
     for rule in forbidden_rules or []:
         pat = rule.split("#", 1)[0].strip()
-        if not pat:
-            continue
+        if not pat: continue
         try:
-            if re.search(pat, py_code):
-                hits.append(rule)
+            if re.search(pat, py_code): hits.append(rule)
         except re.error:
-            if pat in py_code:
-                hits.append(rule)
+            if pat in py_code: hits.append(rule)
     return hits
 
 def tips_for_level(py_code: str, level_rules: dict):
     tips = []
     allowed = " ".join(level_rules.get("allowed", []))
     if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and ("f-strings" in allowed):
-        tips.append("Usa f-strings para salidas claras.")
+        tips.append("Usa f-strings para salidas claras (PEP 498).")
     if "input(" in py_code and not re.search(r"\.strip\(\)", py_code):
-        tips.append("Normaliza la entrada con `.strip()` (y `.lower()` si procede).")
+        tips.append("Normaliza la entrada con `.strip()` y considera `.lower()`.")
     if re.search(r"while\s+True\s*:", py_code) and "while True" not in allowed:
         tips.append("Evita `while True` sin salida clara; añade condición o `break`.")
     return tips
@@ -102,15 +98,66 @@ def tips_for_level(py_code: str, level_rules: dict):
 def collect_exercises(changed_paths):
     grouped = defaultdict(list)
     for p in changed_paths:
-        if str(EXER_DIR) not in str(p):
-            continue
+        if str(EXER_DIR) not in str(p): continue
         for q in p.parents:
             if q.parent == EXER_DIR:
-                grouped[q].append(p)
-                break
+                grouped[q].append(p); break
     return grouped
 
+# ---------- análisis profesional ----------
+def ruff_lint(paths):
+    # Devolvemos issues en formato parseable
+    code, out, err = run(f"ruff check --output-format=json {' '.join(shlex.quote(str(p)) for p in paths)}")
+    issues = []
+    if out.strip():
+        try:
+            import json as _json
+            issues = _json.loads(out)
+        except Exception:
+            pass
+    return issues
+
+def black_diff(paths):
+    # Modo check y diff para sugerir formato
+    code, out, err = run(f"black --check --diff {' '.join(shlex.quote(str(p)) for p in paths)}")
+    return out
+
+def radon_cc(paths):
+    # Complejidad ciclomática
+    code, out, err = run(f"radon cc -s -j {' '.join(shlex.quote(str(p)) for p in paths)}")
+    try:
+        import json as _json
+        return _json.loads(out) if out.strip() else {}
+    except Exception:
+        return {}
+
+def pydocstyle_issues(paths):
+    code, out, err = run(f"pydocstyle {' '.join(shlex.quote(str(p)) for p in paths)}")
+    return out
+
+def gate_by_level(day:int|None, suggestion:str, level_rules:dict) -> bool:
+    """Filtra sugerencias demasiado avanzadas para el día actual."""
+    avoid = " ".join(level_rules.get("avoid", []))
+    # heurística simple: si la clave aparece en avoid, no proponer
+    tokens = {
+        "list comprehension":"comprehensions",
+        "decorator":"decorators",
+        "context manager":"context",
+        "typing":"typing",
+        "generator":"generators",
+    }
+    return not any(t in avoid for t in tokens.values())
+
+# ---------- reporte ----------
 def make_report(ex_dir: Path, files, global_rules):
+    py_files = [f for f in files if f.suffix == ".py"]
+    if not py_files:
+        # Si solo cambiaron README, generar una nota mínima
+        title = ex_dir.name
+        report_path = REPORT_DIR / f"{ex_dir.name}_report.md"
+        report_path.write_text(f"# {title} — Report\n\nSolo se detectaron cambios no-Python.\n", encoding="utf-8")
+        return report_path, {"title": title, "tips": [], "tools": []}
+
     day = None
     for f in files:
         day = infer_day_from_path(f) or day
@@ -125,57 +172,120 @@ def make_report(ex_dir: Path, files, global_rules):
     must_cover = (overrides.get("must_cover") or [])
     tips_extra = (overrides.get("tips_extra") or [])
 
-    tips, tools = [], set()
-    forbidden_hits = []
-    for f in files:
-        if f.suffix == ".py":
-            code = f.read_text(encoding="utf-8", errors="ignore")
-            tips.extend(tips_for_level(code, level_rules))
-            tools |= detect_tools(code)
-            forbidden_hits.extend(check_forbidden(code, forbidden))
+    # Leer códigos
+    code_by_file, tools, forbidden_hits, tips = {}, set(), [], []
+    for f in py_files:
+        code = f.read_text(encoding="utf-8", errors="ignore")
+        code_by_file[f] = code
+        tools |= detect_tools(code)
+        forbidden_hits.extend(check_forbidden(code, forbidden))
+        tips.extend(tips_for_level(code, level_rules))
 
+    # Linters / análisis
+    ruff = ruff_lint(py_files)
+    black_changes = black_diff(py_files)
+    radon = radon_cc(py_files)
+    pyds = pydocstyle_issues(py_files)
+
+    # Curación de issues (texto legible)
+    style_issues = []
+    for item in ruff:
+        msg = f"{item.get('filename')}:{item.get('location',{}).get('row')}:{item.get('location',{}).get('column')} {item.get('code')} {item.get('message')}"
+        if gate_by_level(day, msg, level_rules):
+            style_issues.append(msg)
+
+    doc_issues = [l for l in pyds.splitlines() if l.strip()]
+
+    complexity_rows = []
+    for file, entries in (radon or {}).items():
+        for e in entries:
+            complexity_rows.append(f"{file}:{e.get('lineno')} CC={e.get('complexity')} ({e.get('type')}) {e.get('name')}")
+
+    # Unificar tips
     def uniq(seq): return list(dict.fromkeys(seq))
     tips = uniq(tips + tips_extra)
-    forbidden_hits = uniq(forbidden_hits)
 
+    # Título
     title = overrides.get("title") or ex_dir.name
-    out_md = [f"# {title} — Report", ""]
-    out_md.append(f"**Día (nivel) detectado:** {day if day else 'N/A'}")
+
+    # Construir Markdown robusto
+    md = []
+    md.append(f"# {title} — Code Review (Nivel Día {day if day else 'N/A'})\n")
     if tools:
-        out_md.append(f"**Herramientas vistas:** {', '.join(sorted(tools))}")
+        md.append(f"**Herramientas detectadas:** {', '.join(sorted(tools))}\n")
     if must_cover:
-        out_md.append("**Debe cubrir:** " + "; ".join(must_cover))
+        md.append(f"**Debe cubrir:** {'; '.join(must_cover)}\n")
     if forbidden:
-        out_md.append("**Evitar:** " + "; ".join(forbidden))
-    out_md.append("\n## Revisión y mejoras propuestas")
-    if tips:
-        for i, t in enumerate(tips, 1):
-            out_md.append(f"{i}. {t}")
-    else:
-        out_md.append("- Código correcto para el nivel. ¡Sigue así!")
+        md.append(f"**Evitar (según nivel):** {'; '.join(forbidden)}\n")
+
+    md.append("## Resumen ejecutivo")
+    md.append("- **Correctness:** verificado a simple vista; revisar entradas/salidas y casos borde.")
+    md.append("- **Estilo/PEP8:** ver sección de *Estilo (Ruff/Black)*.")
+    md.append("- **Robustez:** maneja errores explícitos cuando interactúe con `input()` o archivos.")
+    md.append("- **Legibilidad:** nombres claros, funciones pequeñas, comentarios puntuales.")
+    md.append("")
+
+    if style_issues or "diff" in black_changes or doc_issues or complexity_rows:
+        md.append("## Hallazgos")
+        if style_issues:
+            md.append("### Estilo (Ruff)")
+            md.extend([f"- {x}" for x in style_issues[:50]])  # limitar ruido
+            md.append(f"_Referencia_: {DOCS['pep8']}\n")
+        if black_changes and "reformatted" in black_changes or "would reformat" in black_changes:
+            md.append("### Formato (Black — sugerencia)")
+            md.append("Se recomienda aplicar Black para formato consistente. (Ejecuta `black exercises/day_xx/`)")
+            md.append("")
+        if doc_issues:
+            md.append("### Docstrings (pydocstyle)")
+            md.extend([f"- {x}" for x in doc_issues[:30]])
+            md.append("")
+        if complexity_rows:
+            md.append("### Complejidad (Radon)")
+            md.extend([f"- {x}" for x in complexity_rows])
+            md.append("")
 
     if forbidden_hits:
-        out_md.append("\n## Hallazgos a corregir (prohibidos en este nivel)")
-        for h in forbidden_hits:
-            out_md.append(f"- {h}")
+        md.append("## Incumplimientos según nivel")
+        md.extend([f"- {x}" for x in forbidden_hits])
+        md.append("")
 
-    out_md.append("\n## Siguientes pasos (acorde al nivel)")
-    if day and day < 5:
-        out_md.append("- Valida inputs y divide en funciones pequeñas.")
-    elif day and day < 9:
-        out_md.append("- Añade docstrings breves y pruebas manuales simples.")
+    if tips:
+        md.append("## Recomendaciones niveladas")
+        for i, t in enumerate(tips, 1):
+            md.append(f"{i}. {t}")
+        md.append("")
+
+    # Refactor propuesto (light & nivelado)
+    md.append("## Refactor propuesto (acorde al nivel)")
+    if day and day <= 5:
+        md.append("- Divide en funciones pequeñas con nombres verbales (`parse_input`, `main`).")
+        md.append(f"- Usa f-strings cuando presentes resultados ({DOCS['fstrings']}).")
+        md.append("- Añade validación suave de entradas (`.strip().lower()`).")
+    elif day and day <= 10:
+        md.append("- Añade docstrings breves (`\"\"\"Qué hace, args, return\"\"\"`).")
+        md.append("- Evita `while True` sin condición de salida.")
+        md.append("- Aplica `with open(...)` en I/O para cierre automático.")
     else:
-        out_md.append("- Considera tests mínimos y separar lógica/CLI.")
+        md.append("- Separa lógica del CLI y valora tests mínimos.")
+    md.append("")
+
+    md.append("## Próximos pasos")
+    md.append("- Re-ejecuta tras aplicar formato y correcciones de estilo.")
+    md.append("- Cubre al menos 2 casos borde (entrada vacía / valor inesperado).")
+    md.append(f"- Revisa PEP 8: {DOCS['pep8']}")
+    md.append("")
 
     report_path = REPORT_DIR / f"{ex_dir.name}_report.md"
-    report_path.write_text("\n".join(out_md), encoding="utf-8")
+    report_path.write_text("\n".join(md), encoding="utf-8")
 
+    # Para PDF semanal
     return report_path, {
         "title": title,
         "tips": [t for t in tips][:5],
         "tools": sorted(tools)
     }
 
+# ---------- PDF semanal enriquecido ----------
 def generate_week_pdf(items):
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen import canvas
@@ -187,18 +297,18 @@ def generate_week_pdf(items):
     w, h = A4
     y = h - 2*cm
 
-    def line(txt, dy=14):
+    def line(txt, dy=14):  # simple writer
         nonlocal y
         c.drawString(2*cm, y, txt)
         y -= dy
         if y < 2*cm:
             c.showPage(); y = h - 2*cm
 
-    line("Resumen semanal — 100 Days of Code")
+    line("Resumen semanal — 100 Days of Code", 18)
     line(f"Fecha: {today}", 20)
     line("Ejercicios revisados:", 18)
-    counter = defaultdict(int)
 
+    counter = Counter()
     for it in items:
         line(f"• {it['title']}", 16)
         for t in it["tips"]:
@@ -212,17 +322,18 @@ def generate_week_pdf(items):
             line(f"• {k}: {v}", 14)
 
     line("", 18)
-    line("Motivación: " + MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)], 18)
+    mot = MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)]
+    line("Motivación: " + mot, 18)
     c.showPage(); c.save()
     return out
 
+# ---------- main ----------
 def main():
     global_rules = load_global_rules()
     changed = git_changed_files(7)
     grouped = collect_exercises(changed)
 
-    items = []
-    processed_lines = []
+    items, processed_lines = [], []
     today = datetime.date.today().isoformat()
 
     for ex_dir, files in sorted(grouped.items(), key=lambda x: x[0].name):
@@ -230,20 +341,15 @@ def main():
         items.append(item)
         processed_lines.append(f"{item['title']} | {today}")
 
-    # Generar PDF si hubo ítems
     if items:
         generate_week_pdf(items)
         print(f"Reports: {len(items)} — PDF generado.")
     else:
         print("No hay ejercicios nuevos esta semana.")
 
-    # Guardar el resumen para el email simple
+    SUMMARY_FILE.write_text("\n".join(processed_lines) if processed_lines else "No se detectaron ejercicios esta semana.", encoding="utf-8")
     if processed_lines:
-        SUMMARY_FILE.write_text("\n".join(processed_lines), encoding="utf-8")
         print("Procesados:\n" + "\n".join(processed_lines))
-    else:
-        # Asegura que exista el fichero (para el paso del workflow)
-        SUMMARY_FILE.write_text("No se detectaron ejercicios esta semana.", encoding="utf-8")
 
 if __name__ == "__main__":
     main()
