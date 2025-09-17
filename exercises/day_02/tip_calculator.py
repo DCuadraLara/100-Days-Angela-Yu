@@ -1,4 +1,4 @@
-"""Basic example to calculate the tip we should pay"""
+"""Basic example to calculate the tip we should pay."""
 
 # Variables
 bill = 150.00
