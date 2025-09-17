@@ -2,12 +2,12 @@ name: Weekly Review & PDF
 
 on:
   schedule:
-    - cron: '0 7 * * 1'   # Lunes ~09:00 Europe/Madrid (07:00 UTC en verano)
+    - cron: '0 7 * * 1'    # Lunes ~09:00 Europe/Madrid
   push:
     paths:
       - 'exercises/**'
       - 'tools/**'
-  workflow_dispatch: {}
+  workflow_dispatch: {}    # permite ejecutarlo manualmente
 
 permissions:
   contents: write
@@ -43,34 +43,9 @@ jobs:
           git pull --rebase || true
           git push || true
 
-      - name: Read processed list for email
-        id: summary
-        run: |
-          if [ -f reports/_last_run_exercises.txt ]; then
-            echo "exercise_list<<'EOF'" >> $GITHUB_OUTPUT
-            sed -e 's/^/ - /' reports/_last_run_exercises.txt >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "exercise_list= - No se detectaron ejercicios." >> $GITHUB_OUTPUT
-          fi
-
-      - name: Send email notification (simple)
+      - name: Upload weekly PDF artifact
         if: always()
-        uses: dawidd6/action-send-mail@v3
+        uses: actions/upload-artifact@v4
         with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.SMTP_USERNAME }}   # 100days.reports@gmail.com
-          password: ${{ secrets.SMTP_PASSWORD }}   # App Password (16 chars, sin espacios)
-          from: ${{ secrets.MAIL_FROM }}           # 100days.reports@gmail.com
-          to: ${{ secrets.MAIL_TO }}               # davidcuadralara@gmail.com
-          subject: "Aviso: revisión completada"
-          body: |
-            Hola David 👋
-
-            Se han revisado estos ejercicios (formato: NOMBRE | FECHA):
-
-            ${{ steps.summary.outputs.exercise_list }}
-
-            ✅ Reports y PDF están en el repo.
+          name: weekly-pdf
+          path: pdf_report_weekly/*.pdf
