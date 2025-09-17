@@ -56,17 +56,20 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server: smtp.gmail.com
-          port: 465
+          server_address: smtp.gmail.com
+          server_port: 465
           secure: true
           username: ${{ secrets.SMTP_USERNAME }}   # 100days.reports@gmail.com
           password: ${{ secrets.SMTP_PASSWORD }}   # app password (16 chars, sin espacios)
           from: ${{ secrets.MAIL_FROM }}           # 100days.reports@gmail.com
           to: ${{ secrets.MAIL_TO }}               # davidcuadralara@gmail.com
           subject: "Weekly review ✅ 100 Days of Code"
-          content_type: text/html
-          body: |
+          html_body: |
             <h3>Revisión semanal completada</h3>
+            <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+            <p>También puedes descargar el PDF desde los artifacts del run.</p>
+            <p>¡A seguir sumando! 💪</p>
+
             <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
             <p>También puedes descargar el PDF desde los artifacts del run.</p>
             <p>¡A seguir sumando! 💪</p>
