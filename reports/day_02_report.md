@@ -6,11 +6,6 @@
 - **Robustez:** maneja errores explícitos cuando interactúe con `input()` o archivos.
 - **Legibilidad:** nombres claros, funciones pequeñas, comentarios puntuales.
 
-## Hallazgos
-### Docstrings (pydocstyle)
-- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_02/tip_calculator.py:1 at module level:
--         D400: First line should end with a period (not 'y')
-
 ## Recomendaciones niveladas
 1. Normaliza la entrada con `.strip()` y considera `.lower()`.
 
