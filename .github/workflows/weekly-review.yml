@@ -1,1 +1,57 @@
+name: Weekly Review & PDF
 
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Lunes 09:00 Europe/Madrid (~07:00 UTC en verano)
+  push:
+    paths:
+      - 'exercises/**'
+
+permissions:
+  contents: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install reportlab
+
+      - name: Run reviewer
+        run: python tools/reviewer.py
+
+      - name: Commit reports and PDF
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/ pdf_report_weekly/
+          git commit -m "chore: weekly review reports and PDF" || echo "nothing to commit"
+          git push
+
+      - name: Send email notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server: ${{ secrets.SMTP_SERVER }}
+          port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Weekly review ✅ 100 Days of Code"
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+          content_type: text/html
+          body: |
+            <h3>Revisión semanal completada</h3>
+            <p>Se han generado nuevos reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+            <p>¡Sigue así! 💪</p>
