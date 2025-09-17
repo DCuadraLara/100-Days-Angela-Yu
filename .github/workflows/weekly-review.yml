@@ -2,10 +2,11 @@ name: Weekly Review & PDF
 
 on:
   schedule:
-    - cron: '0 7 * * 1'   # Lunes 09:00 Europe/Madrid (~07:00 UTC en verano)
+    - cron: '0 7 * * 1'   # Lunes 09:00 Europe/Madrid aprox (07:00 UTC en verano)
   push:
     paths:
       - 'exercises/**'
+      - 'tools/rules/**'   # si cambio reglas, que vuelva a correr
 
 permissions:
   contents: write
@@ -13,7 +14,6 @@ permissions:
 jobs:
   review:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -23,10 +23,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install reportlab
+          pip install reportlab pyyaml
 
       - name: Run reviewer
         run: python tools/reviewer.py
@@ -36,9 +36,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/ pdf_report_weekly/
-          git commit -m "chore: weekly review reports and PDF" || echo "nothing to commit"
+          git commit -m "chore: weekly review (reports + PDF)" || echo "nothing to commit"
           git push
 
+      # Email opcional (si pones secrets SMTP)
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
@@ -53,5 +54,5 @@ jobs:
           content_type: text/html
           body: |
             <h3>Revisión semanal completada</h3>
-            <p>Se han generado nuevos reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-            <p>¡Sigue así! 💪</p>
+            <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+            <p>¡A seguir sumando! 💪</p>
