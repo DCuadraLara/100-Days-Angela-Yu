@@ -2,11 +2,11 @@ name: Weekly Review & PDF
 
 on:
   schedule:
-    - cron: '0 7 * * 1'   # Lunes 09:00 Europe/Madrid aprox (07:00 UTC en verano)
+    - cron: '0 7 * * 1'   # Lunes ~09:00 Europe/Madrid (07:00 UTC en verano)
   push:
     paths:
       - 'exercises/**'
-      - 'tools/rules/**'   # si cambio reglas, que vuelva a correr
+      - 'tools/**'          # si cambias reglas o scripts, que vuelva a correr
 
 permissions:
   contents: write
@@ -39,18 +39,17 @@ jobs:
           git commit -m "chore: weekly review (reports + PDF)" || echo "nothing to commit"
           git push
 
-      # Email opcional (si pones secrets SMTP)
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server: ${{ secrets.SMTP_SERVER }}
-          port: ${{ secrets.SMTP_PORT }}
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
+          server: ${{ secrets.SMTP_SERVER }}        # smtp.gmail.com
+          port: ${{ secrets.SMTP_PORT }}            # 587
+          username: ${{ secrets.SMTP_USERNAME }}    # 100days.reports@gmail.com
+          password: ${{ secrets.SMTP_PASSWORD }}    # fvxejpgyxkshiqej (en Secrets, sin espacios)
           subject: "Weekly review ✅ 100 Days of Code"
-          to: ${{ secrets.MAIL_TO }}
-          from: ${{ secrets.MAIL_FROM }}
+          from: ${{ secrets.MAIL_FROM }}            # 100days.reports@gmail.com
+          to: ${{ secrets.MAIL_TO }}                # davidcuadralara@gmail.com
           content_type: text/html
           body: |
             <h3>Revisión semanal completada</h3>
