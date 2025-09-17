@@ -1,5 +1,5 @@
 # tools/reviewer.py
-import os, re, json, datetime, subprocess
+import os, re, json, yaml, datetime, subprocess
 from pathlib import Path
 from collections import defaultdict
 
@@ -7,23 +7,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 EXER_DIR   = REPO_ROOT / "exercises"
 REPORT_DIR = REPO_ROOT / "reports"
 PDF_DIR    = REPO_ROOT / "pdf_report_weekly"
-RULES_FILE = REPO_ROOT / "tools" / "review_rules.json"
+RULES_FILE = REPO_ROOT / "tools" / "rules" / "global.json"
 
-REPORT_DIR.mkdir(exist_ok=True)
-PDF_DIR.mkdir(exist_ok=True)
-
-DEFAULT_RULES = {
-    1:  ["input()/print", "variables", "f-strings", "if/else simples"],
-    2:  ["operadores", "condicionales anidados", "nombres claros"],
-    3:  ["listas", "% módulo", "funciones pequeñas"],
-    4:  ["diccionarios/sets básicos", "for/while"],
-    5:  ["funciones con return", "docstrings cortos"],
-    6:  ["try/except sencillo", "validación de input"],
-    7:  ["list comprehensions (intro)"],
-    8:  ["I/O de archivos (intro)"],
-    9:  ["módulos e imports básicos"],
-    10: ["estructura mínima de proyecto"]
-}
+REPORT_DIR.mkdir(exist_ok=True, parents=True)
+PDF_DIR.mkdir(exist_ok=True, parents=True)
 
 MOTIVATION = [
     "La constancia gana a la motivación.",
@@ -32,14 +19,16 @@ MOTIVATION = [
     "Primero que funcione, luego que sea bonito, luego que sea rápido."
 ]
 
-def load_rules():
+def load_global_rules():
     if RULES_FILE.exists():
-        try:
-            data = json.loads(RULES_FILE.read_text(encoding="utf-8"))
-            return {int(k): v for k, v in data.items()}
-        except Exception:
-            pass
-    return DEFAULT_RULES
+        return {int(k): v for k, v in json.loads(RULES_FILE.read_text(encoding="utf-8")).items()}
+    return {}
+
+def load_meta(ex_dir: Path):
+    meta = ex_dir / "meta.yml"
+    if meta.exists():
+        return yaml.safe_load(meta.read_text(encoding="utf-8")) or {}
+    return {}
 
 def git_changed_files(days=7):
     since = (datetime.datetime.utcnow() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
@@ -54,7 +43,6 @@ def infer_day_from_path(p: Path):
 
 def detect_tools(py_code: str):
     tools = set()
-    # heurísticas simples
     if re.search(r"\bimport\s+random\b", py_code): tools.add("random")
     if re.search(r"\bimport\s+math\b", py_code): tools.add("math")
     if re.search(r"\bimport\s+re\b", py_code): tools.add("re")
@@ -62,68 +50,115 @@ def detect_tools(py_code: str):
     if re.search(r"\brequests\b", py_code): tools.add("requests")
     return tools
 
-def lint_tips(py_code: str, day: int, rules: dict):
+def check_forbidden(py_code: str, forbidden_rules):
+    hits = []
+    for rule in forbidden_rules or []:
+        # permite comentarios en la regla: "pattern  # nota"
+        pat = rule.split("#", 1)[0].strip()
+        if not pat: 
+            continue
+        try:
+            if re.search(pat, py_code):
+                hits.append(rule)
+        except re.error:
+            # si no es regex válido, haz búsqueda literal
+            if pat in py_code:
+                hits.append(rule)
+    return hits
+
+def tips_for_level(py_code: str, level_rules: dict):
     tips = []
-    day_rules = rules.get(day, [])
-    if day_rules:
-        tips.append(f"**Enfoque Día {day}:** " + ", ".join(day_rules))
-
-    # aconsejar acorde al nivel (suave)
-    if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and day >= 1:
-        tips.append("Usa f-strings para salidas claras (si ya están vistas en este día).")
+    # generales, suaves y acordes al nivel
+    if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and "f-strings" in " ".join(level_rules.get("allowed", [])):
+        tips.append("Usa f-strings para salidas claras.")
     if "input(" in py_code and not re.search(r"\.strip\(\)", py_code):
-        tips.append("Aplica `.strip()` al `input()` para evitar espacios accidentales.")
-    if re.search(r"while\s+True\s*:", py_code) and "break" not in py_code:
-        tips.append("Evita bucles infinitos sin condición/salida clara; añade un `break` o condición.")
-    if re.search(r"if\s+.+:\s*\n\s*pass", py_code):
-        tips.append("Evita `pass` en ramas importantes; completa la lógica o elimina la rama.")
-    if len(py_code.splitlines()) > 150:
-        tips.append("Divide en funciones pequeñas para mejorar legibilidad y pruebas.")
-    return list(dict.fromkeys(tips))
+        tips.append("Normaliza la entrada con `.strip()` (y `.lower()` si procede).")
+    if re.search(r"while\s+True\s*:", py_code) and "while True" not in level_rules.get("allowed", []):
+        tips.append("Evita `while True` sin salida clara; añade condición o `break`.")
+    return tips
 
-def collect_exercise_units(changed_paths):
+def collect_exercises(changed_paths):
     grouped = defaultdict(list)
     for p in changed_paths:
-        if str(EXER_DIR) not in str(p): 
+        if str(EXER_DIR) not in str(p):
             continue
-        # agrupa por carpeta de ejercicio (day_xx)
+        # agrupar por carpeta de ejercicio (inmediata bajo exercises/)
         for q in p.parents:
             if q.parent == EXER_DIR:
-                grouped[q.name].append(p)
+                grouped[q].append(p)
                 break
     return grouped
 
-def make_report(ex_name: str, day: int, files, rules):
+def make_report(ex_dir: Path, files, global_rules):
+    # día detectado
+    day = None
+    for f in files:
+        day = infer_day_from_path(f) or day
+
+    level_rules = global_rules.get(day, {})
+    overrides = load_meta(ex_dir)  # title, day, must_cover, forbidden, tips_extra...
+    if overrides.get("day"):
+        day = overrides["day"]
+        level_rules = global_rules.get(day, level_rules)
+
+    # fusiona
+    forbidden = (overrides.get("forbidden") or [])
+    must_cover = (overrides.get("must_cover") or [])
+    tips_extra = (overrides.get("tips_extra") or [])
+
     tips, tools = [], set()
+    forbidden_hits = []
     for f in files:
         if f.suffix == ".py":
             code = f.read_text(encoding="utf-8", errors="ignore")
-            tips.extend(lint_tips(code, day, rules))
+            tips.extend(tips_for_level(code, level_rules))
             tools |= detect_tools(code)
-    tips = list(dict.fromkeys(tips)) or ["Código correcto para el nivel. ¡Sigue así!"]
+            forbidden_hits.extend(check_forbidden(code, forbidden))
 
-    md = []
-    md.append(f"# {ex_name} — Report\n")
-    md.append(f"**Día detectado:** {day if day else 'N/A'}")
+    # de-duplicar
+    def uniq(seq): return list(dict.fromkeys(seq))
+    tips = uniq(tips + tips_extra)
+    forbidden_hits = uniq(forbidden_hits)
+
+    title = overrides.get("title") or ex_dir.name
+    out_md = [f"# {title} — Report", ""]
+    out_md.append(f"**Día (nivel) detectado:** {day if day else 'N/A'}")
     if tools:
-        md.append(f"**Herramientas vistas:** {', '.join(sorted(tools))}")
-    md.append("\n## Revisión y mejoras propuestas\n")
-    for i, tip in enumerate(tips, 1):
-        md.append(f"{i}. {tip}")
-    md.append("\n## Siguientes pasos (acorde al nivel)\n")
-    if day and day < 5:
-        md.append("- Añade validación básica de entrada y mensajes de error claros.")
-    elif day and day < 9:
-        md.append("- Separa lógica en funciones y añade docstrings breves.")
+        out_md.append(f"**Herramientas vistas:** {', '.join(sorted(tools))}")
+    if must_cover:
+        out_md.append("**Debe cubrir:** " + "; ".join(must_cover))
+    if forbidden:
+        out_md.append("**Evitar:** " + "; ".join(forbidden))
+    out_md.append("\n## Revisión y mejoras propuestas")
+    if tips:
+        for i, t in enumerate(tips, 1):
+            out_md.append(f"{i}. {t}")
     else:
-        md.append("- Considera tests mínimos (inputs típicos y casos borde).")
-    md.append("\n## Snippet orientativo (si aplica)\n")
-    md.append("> Incluye aquí un mini refactor acorde al día (opcional).")
-    out = REPORT_DIR / f"{ex_name}_report.md"
-    out.write_text("\n".join(md), encoding="utf-8")
-    return out, tools
+        out_md.append("- Código correcto para el nivel. ¡Sigue así!")
 
-def generate_week_pdf(summary):
+    if forbidden_hits:
+        out_md.append("\n## Hallazgos a corregir (prohibidos en este nivel)")
+        for h in forbidden_hits:
+            out_md.append(f"- {h}")
+
+    out_md.append("\n## Siguientes pasos (acorde al nivel)")
+    if day and day < 5:
+        out_md.append("- Valida inputs y divide en funciones pequeñas.")
+    elif day and day < 9:
+        out_md.append("- Añade docstrings breves y pruebas manuales simples.")
+    else:
+        out_md.append("- Considera tests mínimos y separar lógica/CLI.")
+
+    report_path = REPORT_DIR / f"{ex_dir.name}_report.md"
+    report_path.write_text("\n".join(out_md), encoding="utf-8")
+    # para el PDF (resumen)
+    return report_path, {
+        "title": title,
+        "tips": [t for t in tips][:5],
+        "tools": sorted(tools)
+    }
+
+def generate_week_pdf(items):
     from reportlab.lib.pagesizes import A4
     from reportlab.pdfgen import canvas
     from reportlab.lib.units import cm
@@ -139,57 +174,45 @@ def generate_week_pdf(summary):
         c.drawString(2*cm, y, txt)
         y -= dy
         if y < 2*cm:
-            c.showPage()
-            y = h - 2*cm
+            c.showPage(); y = h - 2*cm
 
     line("Resumen semanal — 100 Days of Code")
     line(f"Fecha: {today}", 20)
     line("Ejercicios revisados:", 18)
-    tool_counter = defaultdict(int)
+    counter = defaultdict(int)
 
-    for ex_name, tips, tools in summary:
-        line(f"• {ex_name}", 16)
-        for t in tips[:5]:
+    for it in items:
+        line(f"• {it['title']}", 16)
+        for t in it["tips"]:
             line(f"   - {t}", 14)
-        for tl in tools:
-            tool_counter[tl] += 1
+        for tl in it["tools"]:
+            counter[tl] += 1
 
-    if tool_counter:
-        line("", 18)
-        line("Herramientas más usadas:", 18)
-        for k, v in sorted(tool_counter.items(), key=lambda x: -x[1]):
-            line(f"• {k}: {v} ejercicios", 14)
+    if counter:
+        line("", 18); line("Herramientas más usadas:", 18)
+        for k, v in sorted(counter.items(), key=lambda x: -x[1]):
+            line(f"• {k}: {v}", 14)
 
     line("", 18)
-    line("Tip de la semana: " + MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)], 18)
-    c.showPage()
-    c.save()
+    line("Motivación: " + MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)], 18)
+    c.showPage(); c.save()
     return out
 
 def main():
-    rules = load_rules()
+    global_rules = load_global_rules()
     changed = git_changed_files(7)
-    grouped = collect_exercise_units(changed)
+    grouped = collect_exercises(changed)
 
-    summary = []
-    for ex, files in sorted(grouped.items()):
-        day = None
-        for f in files:
-            day = infer_day_from_path(f) or day
-        report_path, tools = make_report(ex, day, files, rules)
-        # extrae tips del report para el PDF
-        tips = []
-        for line in report_path.read_text(encoding="utf-8").splitlines():
-            if re.match(r"\d+\.\s", line):
-                tips.append(re.sub(r"^\d+\.\s", "", line))
-        summary.append((ex, tips, tools))
+    items = []
+    for ex_dir, files in sorted(grouped.items(), key=lambda x: x[0].name):
+        report_path, item = make_report(ex_dir, files, global_rules)
+        items.append(item)
 
-    if summary:
-        pdf_path = generate_week_pdf(summary)
-        print(f"Generated {len(summary)} reports and PDF: {pdf_path}")
+    if items:
+        generate_week_pdf(items)
+        print(f"Reports: {len(items)} — PDF generado.")
     else:
-        print("No new exercises this week.")
+        print("No hay ejercicios nuevos esta semana.")
 
 if __name__ == "__main__":
     main()
-
