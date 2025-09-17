@@ -1,0 +1,52 @@
+{
+  "1": {
+    "allowed": ["print", "input", "f-strings", "if-else"],
+    "avoid": ["comprehensions", "try-except complejo"],
+    "focus": ["nombres claros", "mensajes de input", "branching simple"]
+  },
+  "2": {
+    "allowed": ["if-elif-else", "operadores", "f-strings"],
+    "avoid": ["estructuras avanzadas"],
+    "focus": ["validación simple de input", "operadores lógicos"]
+  },
+  "3": {
+    "allowed": ["listas", "funciones pequeñas", "módulo %"],
+    "avoid": ["diccionarios avanzados", "clases"],
+    "focus": ["dividir en funciones", "usar % correctamente (piedra-papel-tijera)"]
+  },
+  "4": {
+    "allowed": ["for/while", "dict/set básicos"],
+    "avoid": ["list/dict comprehensions complejas"],
+    "focus": ["bucles claros", "evitar while True sin salida"]
+  },
+  "5": {
+    "allowed": ["funciones con return", "docstrings cortos"],
+    "avoid": ["manejo de errores complejo"],
+    "focus": ["single-responsibility", "nombres de función verbales"]
+  },
+  "6": {
+    "allowed": ["try/except sencillo", "validación robusta"],
+    "avoid": ["capturar Exception genérico"],
+    "focus": ["mensajes de error útiles", "paths felices y de error"]
+  },
+  "7": {
+    "allowed": ["list comprehensions (intro)"],
+    "avoid": ["anidadas/decoradores"],
+    "focus": ["claridad sobre ‘cleverness’"]
+  },
+  "8": {
+    "allowed": ["file I/O básico (open/read/write)"],
+    "avoid": ["csv/json avanzados"],
+    "focus": ["cerrar archivos", "with context manager"]
+  },
+  "9": {
+    "allowed": ["módulos e imports básicos"],
+    "avoid": ["packaging complejo"],
+    "focus": ["reutilización", "separar lógica de ejecución"]
+  },
+  "10": {
+    "allowed": ["estructura mínima de proyecto"],
+    "avoid": ["frameworks"],
+    "focus": ["organización carpetas", "nombrado consistente"]
+  }
+}
