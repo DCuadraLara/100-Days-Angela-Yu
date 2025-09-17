@@ -31,11 +31,36 @@ def load_meta(ex_dir: Path):
     return {}
 
 def git_changed_files(days=7):
+    """
+    Devuelve archivos cambiados en los últimos `days` días.
+    Incluye fallback al último commit en exercises/** si no hay cambios recientes
+    (útil en el primer run o con fetch-depth bajo).
+    """
     since = (datetime.datetime.utcnow() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
     cmd = ["git", "log", f'--since="{since} 00:00"', "--name-only", "--pretty=format:"]
-    out = subprocess.check_output(" ".join(cmd), shell=True, cwd=REPO_ROOT).decode("utf-8", "ignore")
+    try:
+        out = subprocess.check_output(" ".join(cmd), shell=True, cwd=REPO_ROOT).decode("utf-8", "ignore")
+    except subprocess.CalledProcessError:
+        out = ""
     files = sorted({f.strip() for f in out.splitlines() if f.strip()})
-    return [REPO_ROOT / f for f in files if (REPO_ROOT / f).exists()]
+    changed = [REPO_ROOT / f for f in files if (REPO_ROOT / f).exists()]
+
+    if changed:
+        return changed
+
+    # Fallback: tomar archivos tocados en exercises/** del último commit
+    try:
+        out = subprocess.check_output(
+            'git show --name-only --pretty=format: HEAD -- "exercises/**"',
+            shell=True, cwd=REPO_ROOT
+        ).decode("utf-8", "ignore")
+        fallback = [REPO_ROOT / f for f in out.splitlines() if f.startswith("exercises/") and (REPO_ROOT / f).exists()]
+        if fallback:
+            return fallback
+    except Exception:
+        pass
+
+    return []
 
 def infer_day_from_path(p: Path):
     m = re.search(r"day[_-]?(\d+)", str(p).lower())
@@ -43,38 +68,43 @@ def infer_day_from_path(p: Path):
 
 def detect_tools(py_code: str):
     tools = set()
+    # imports y usos típicos de primeros días
     if re.search(r"\bimport\s+random\b", py_code): tools.add("random")
     if re.search(r"\bimport\s+math\b", py_code): tools.add("math")
     if re.search(r"\bimport\s+re\b", py_code): tools.add("re")
-    if re.search(r"\bopen\s*\(", py_code): tools.add("file I/O")
+    if re.search(r"\bimport\s+time\b", py_code): tools.add("time")
+    if re.search(r"\bimport\s+os\b", py_code) or "os." in py_code: tools.add("os")
     if re.search(r"\brequests\b", py_code): tools.add("requests")
+    if re.search(r"\bopen\s*\(", py_code): tools.add("file I/O")
+    if "random." in py_code: tools.add("random API")
     return tools
 
 def check_forbidden(py_code: str, forbidden_rules):
     hits = []
     for rule in forbidden_rules or []:
-        # permite comentarios en la regla: "pattern  # nota"
         pat = rule.split("#", 1)[0].strip()
-        if not pat: 
+        if not pat:
             continue
         try:
             if re.search(pat, py_code):
                 hits.append(rule)
         except re.error:
-            # si no es regex válido, haz búsqueda literal
             if pat in py_code:
                 hits.append(rule)
     return hits
 
 def tips_for_level(py_code: str, level_rules: dict):
     tips = []
-    # generales, suaves y acordes al nivel
-    if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and "f-strings" in " ".join(level_rules.get("allowed", [])):
+    allowed = " ".join(level_rules.get("allowed", []))
+
+    # Consejos suaves alineados al nivel
+    if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and ("f-strings" in allowed):
         tips.append("Usa f-strings para salidas claras.")
     if "input(" in py_code and not re.search(r"\.strip\(\)", py_code):
         tips.append("Normaliza la entrada con `.strip()` (y `.lower()` si procede).")
-    if re.search(r"while\s+True\s*:", py_code) and "while True" not in level_rules.get("allowed", []):
+    if re.search(r"while\s+True\s*:", py_code) and "while True" not in allowed:
         tips.append("Evita `while True` sin salida clara; añade condición o `break`.")
+
     return tips
 
 def collect_exercises(changed_paths):
@@ -82,7 +112,7 @@ def collect_exercises(changed_paths):
     for p in changed_paths:
         if str(EXER_DIR) not in str(p):
             continue
-        # agrupar por carpeta de ejercicio (inmediata bajo exercises/)
+        # agrupar por carpeta inmediata bajo exercises/
         for q in p.parents:
             if q.parent == EXER_DIR:
                 grouped[q].append(p)
@@ -129,6 +159,7 @@ def make_report(ex_dir: Path, files, global_rules):
         out_md.append("**Debe cubrir:** " + "; ".join(must_cover))
     if forbidden:
         out_md.append("**Evitar:** " + "; ".join(forbidden))
+
     out_md.append("\n## Revisión y mejoras propuestas")
     if tips:
         for i, t in enumerate(tips, 1):
@@ -151,7 +182,8 @@ def make_report(ex_dir: Path, files, global_rules):
 
     report_path = REPORT_DIR / f"{ex_dir.name}_report.md"
     report_path.write_text("\n".join(out_md), encoding="utf-8")
-    # para el PDF (resumen)
+
+    # datos para el PDF
     return report_path, {
         "title": title,
         "tips": [t for t in tips][:5],
@@ -174,7 +206,8 @@ def generate_week_pdf(items):
         c.drawString(2*cm, y, txt)
         y -= dy
         if y < 2*cm:
-            c.showPage(); y = h - 2*cm
+            c.showPage()
+            y = h - 2*cm
 
     line("Resumen semanal — 100 Days of Code")
     line(f"Fecha: {today}", 20)
@@ -189,13 +222,15 @@ def generate_week_pdf(items):
             counter[tl] += 1
 
     if counter:
-        line("", 18); line("Herramientas más usadas:", 18)
+        line("", 18)
+        line("Herramientas más usadas:", 18)
         for k, v in sorted(counter.items(), key=lambda x: -x[1]):
             line(f"• {k}: {v}", 14)
 
     line("", 18)
     line("Motivación: " + MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)], 18)
-    c.showPage(); c.save()
+    c.showPage()
+    c.save()
     return out
 
 def main():
