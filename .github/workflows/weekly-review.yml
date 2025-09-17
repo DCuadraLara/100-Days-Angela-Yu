@@ -50,7 +50,6 @@ jobs:
           name: weekly-pdf
           path: pdf_report_weekly/*.pdf
 
-      # Email usando connection_url (smtps en 465)
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
@@ -62,5 +61,4 @@ jobs:
           html_body: |
             <h3>Revisión semanal completada</h3>
             <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-            <p>También puedes descargar el PDF desde los artifacts del run.</p>
             <p>¡A seguir sumando! 💪</p>
