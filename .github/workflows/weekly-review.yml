@@ -54,7 +54,11 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          connection_url: smtps://${{ secrets.SMTP_USERNAME_URL }}:${{ secrets.SMTP_PASSWORD }}@smtp.gmail.com:465
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
           from: ${{ secrets.MAIL_FROM }}
           to: ${{ secrets.MAIL_TO }}
           subject: "Weekly review ✅ 100 Days of Code"
@@ -62,3 +66,5 @@ jobs:
             <h3>Revisión semanal completada</h3>
             <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
             <p>¡A seguir sumando! 💪</p>
+          nodemailerlog: true
+          nodemailerdebug: true
