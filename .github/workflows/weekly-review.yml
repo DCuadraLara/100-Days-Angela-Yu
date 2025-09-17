@@ -45,6 +45,7 @@ jobs:
         with:
           server: ${{ secrets.SMTP_SERVER }}        # smtp.gmail.com
           port: ${{ secrets.SMTP_PORT }}            # 587
+          secure: false
           username: ${{ secrets.SMTP_USERNAME }}    # 100days.reports@gmail.com
           password: ${{ secrets.SMTP_PASSWORD }}   
           subject: "Weekly review ✅ 100 Days of Code"
