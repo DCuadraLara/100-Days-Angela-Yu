@@ -7,6 +7,7 @@ on:
     paths:
       - 'exercises/**'
       - 'tools/**'          # si cambias reglas o scripts, que vuelva a correr
+  workflow_dispatch: {}     # para poder lanzarlo a mano
 
 permissions:
   contents: write
@@ -17,6 +18,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -37,22 +40,23 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/ pdf_report_weekly/
           git commit -m "chore: weekly review (reports + PDF)" || echo "nothing to commit"
-          git push
+          git pull --rebase || true
+          git push || true
 
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-        server: ${{ secrets.SMTP_SERVER }}
-        port: ${{ secrets.SMTP_PORT }}
-        secure: false                # 👈 importante para STARTTLS
-        username: ${{ secrets.SMTP_USERNAME }}
-        password: ${{ secrets.SMTP_PASSWORD }}
-        subject: "Weekly review ✅ 100 Days of Code"
-        from: ${{ secrets.MAIL_FROM }}
-        to: ${{ secrets.MAIL_TO }}
-        content_type: text/html
-        body: |
-          <h3>Revisión semanal completada</h3>
-          <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-          <p>¡A seguir sumando! 💪</p>
+          server: ${{ secrets.SMTP_SERVER }}
+          port: ${{ secrets.SMTP_PORT }}
+          secure: false
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Weekly review ✅ 100 Days of Code"
+          from: ${{ secrets.MAIL_FROM }}
+          to: ${{ secrets.MAIL_TO }}
+          content_type: text/html
+          body: |
+            <h3>Revisión semanal completada</h3>
+            <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+            <p>¡A seguir sumando! 💪</p>
