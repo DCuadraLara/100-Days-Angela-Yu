@@ -43,20 +43,30 @@ jobs:
           git pull --rebase || true
           git push || true
 
+      # Subimos el PDF como artefacto por si el email fallara
+      - name: Upload weekly PDF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-pdf
+          path: pdf_report_weekly/*.pdf
+
+      # Envío de email con Gmail usando TLS implícito (puerto 465)
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server: ${{ secrets.SMTP_SERVER }}
-          port: ${{ secrets.SMTP_PORT }}
-          secure: false
-          username: ${{ secrets.SMTP_USERNAME }}
-          password: ${{ secrets.SMTP_PASSWORD }}
+          server: smtp.gmail.com
+          port: 465
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}   # 100days.reports@gmail.com
+          password: ${{ secrets.SMTP_PASSWORD }}   # app password (16 chars, sin espacios)
+          from: ${{ secrets.MAIL_FROM }}           # 100days.reports@gmail.com
+          to: ${{ secrets.MAIL_TO }}               # davidcuadralara@gmail.com
           subject: "Weekly review ✅ 100 Days of Code"
-          from: ${{ secrets.MAIL_FROM }}
-          to: ${{ secrets.MAIL_TO }}
           content_type: text/html
           body: |
             <h3>Revisión semanal completada</h3>
             <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+            <p>También puedes descargar el PDF desde los artifacts del run.</p>
             <p>¡A seguir sumando! 💪</p>
