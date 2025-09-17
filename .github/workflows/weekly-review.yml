@@ -43,16 +43,16 @@ jobs:
         if: always()
         uses: dawidd6/action-send-mail@v3
         with:
-          server: ${{ secrets.SMTP_SERVER }}        # smtp.gmail.com
-          port: ${{ secrets.SMTP_PORT }}            # 587
-          secure: false
-          username: ${{ secrets.SMTP_USERNAME }}    # 100days.reports@gmail.com
-          password: ${{ secrets.SMTP_PASSWORD }}   
-          subject: "Weekly review ✅ 100 Days of Code"
-          from: ${{ secrets.MAIL_FROM }}            # 100days.reports@gmail.com
-          to: ${{ secrets.MAIL_TO }}                
-          content_type: text/html
-          body: |
-            <h3>Revisión semanal completada</h3>
-            <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-            <p>¡A seguir sumando! 💪</p>
+        server: ${{ secrets.SMTP_SERVER }}
+        port: ${{ secrets.SMTP_PORT }}
+        secure: false                # 👈 importante para STARTTLS
+        username: ${{ secrets.SMTP_USERNAME }}
+        password: ${{ secrets.SMTP_PASSWORD }}
+        subject: "Weekly review ✅ 100 Days of Code"
+        from: ${{ secrets.MAIL_FROM }}
+        to: ${{ secrets.MAIL_TO }}
+        content_type: text/html
+        body: |
+          <h3>Revisión semanal completada</h3>
+          <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
+          <p>¡A seguir sumando! 💪</p>
