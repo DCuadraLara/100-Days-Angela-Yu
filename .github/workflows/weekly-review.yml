@@ -2,12 +2,12 @@ name: Weekly Review & PDF
 
 on:
   schedule:
-    - cron: '0 7 * * 1'   # Lunes ~09:00 Europe/Madrid (07:00 UTC en verano)
+    - cron: '0 7 * * 1'
   push:
     paths:
       - 'exercises/**'
-      - 'tools/**'          # si cambias reglas o scripts, que vuelva a correr
-  workflow_dispatch: {}     # para poder lanzarlo a mano
+      - 'tools/**'
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -43,7 +43,6 @@ jobs:
           git pull --rebase || true
           git push || true
 
-      # Subimos el PDF como artefacto por si el email fallara
       - name: Upload weekly PDF
         if: always()
         uses: actions/upload-artifact@v4
@@ -51,7 +50,7 @@ jobs:
           name: weekly-pdf
           path: pdf_report_weekly/*.pdf
 
-      # Envío de email con Gmail usando TLS implícito (puerto 465)
+      # === EMAIL: opción A (recomendada) usando server_address/server_port ===
       - name: Send email notification
         if: always()
         uses: dawidd6/action-send-mail@v3
@@ -59,17 +58,12 @@ jobs:
           server_address: smtp.gmail.com
           server_port: 465
           secure: true
-          username: ${{ secrets.SMTP_USERNAME }}   # 100days.reports@gmail.com
-          password: ${{ secrets.SMTP_PASSWORD }}   # app password (16 chars, sin espacios)
-          from: ${{ secrets.MAIL_FROM }}           # 100days.reports@gmail.com
-          to: ${{ secrets.MAIL_TO }}               # davidcuadralara@gmail.com
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: ${{ secrets.MAIL_FROM }}
+          to: ${{ secrets.MAIL_TO }}
           subject: "Weekly review ✅ 100 Days of Code"
           html_body: |
             <h3>Revisión semanal completada</h3>
             <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-            <p>También puedes descargar el PDF desde los artifacts del run.</p>
-            <p>¡A seguir sumando! 💪</p>
-
-            <p>Se han generado reports en <code>/reports</code> y un PDF en <code>/pdf_report_weekly</code>.</p>
-            <p>También puedes descargar el PDF desde los artifacts del run.</p>
             <p>¡A seguir sumando! 💪</p>
