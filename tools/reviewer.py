@@ -8,6 +8,7 @@ EXER_DIR   = REPO_ROOT / "exercises"
 REPORT_DIR = REPO_ROOT / "reports"
 PDF_DIR    = REPO_ROOT / "pdf_report_weekly"
 RULES_FILE = REPO_ROOT / "tools" / "rules" / "global.json"
+SUMMARY_FILE = REPORT_DIR / "_last_run_exercises.txt"
 
 REPORT_DIR.mkdir(exist_ok=True, parents=True)
 PDF_DIR.mkdir(exist_ok=True, parents=True)
@@ -31,13 +32,8 @@ def load_meta(ex_dir: Path):
     return {}
 
 def git_changed_files(days=7):
-    """
-    Devuelve archivos cambiados en los últimos `days` días.
-    Incluye fallback al último commit en exercises/** si no hay cambios recientes
-    (útil en el primer run o con fetch-depth bajo).
-    """
     since = (datetime.datetime.utcnow() - datetime.timedelta(days=days)).strftime("%Y-%m-%d")
-    cmd = ["git", "log", f'--since="{since} 00:00"', "--name-only", "--pretty=format:"]
+    cmd = ["git", "log", f'--since=\"{since} 00:00\"', "--name-only", "--pretty=format:"]
     try:
         out = subprocess.check_output(" ".join(cmd), shell=True, cwd=REPO_ROOT).decode("utf-8", "ignore")
     except subprocess.CalledProcessError:
@@ -48,7 +44,7 @@ def git_changed_files(days=7):
     if changed:
         return changed
 
-    # Fallback: tomar archivos tocados en exercises/** del último commit
+    # Fallback: último commit que tocó exercises/**
     try:
         out = subprocess.check_output(
             'git show --name-only --pretty=format: HEAD -- "exercises/**"',
@@ -68,7 +64,6 @@ def infer_day_from_path(p: Path):
 
 def detect_tools(py_code: str):
     tools = set()
-    # imports y usos típicos de primeros días
     if re.search(r"\bimport\s+random\b", py_code): tools.add("random")
     if re.search(r"\bimport\s+math\b", py_code): tools.add("math")
     if re.search(r"\bimport\s+re\b", py_code): tools.add("re")
@@ -96,15 +91,12 @@ def check_forbidden(py_code: str, forbidden_rules):
 def tips_for_level(py_code: str, level_rules: dict):
     tips = []
     allowed = " ".join(level_rules.get("allowed", []))
-
-    # Consejos suaves alineados al nivel
     if ("print(" in py_code) and ("f\"" not in py_code and "f'" not in py_code) and ("f-strings" in allowed):
         tips.append("Usa f-strings para salidas claras.")
     if "input(" in py_code and not re.search(r"\.strip\(\)", py_code):
         tips.append("Normaliza la entrada con `.strip()` (y `.lower()` si procede).")
     if re.search(r"while\s+True\s*:", py_code) and "while True" not in allowed:
         tips.append("Evita `while True` sin salida clara; añade condición o `break`.")
-
     return tips
 
 def collect_exercises(changed_paths):
@@ -112,7 +104,6 @@ def collect_exercises(changed_paths):
     for p in changed_paths:
         if str(EXER_DIR) not in str(p):
             continue
-        # agrupar por carpeta inmediata bajo exercises/
         for q in p.parents:
             if q.parent == EXER_DIR:
                 grouped[q].append(p)
@@ -120,18 +111,16 @@ def collect_exercises(changed_paths):
     return grouped
 
 def make_report(ex_dir: Path, files, global_rules):
-    # día detectado
     day = None
     for f in files:
         day = infer_day_from_path(f) or day
 
     level_rules = global_rules.get(day, {})
-    overrides = load_meta(ex_dir)  # title, day, must_cover, forbidden, tips_extra...
+    overrides = load_meta(ex_dir)
     if overrides.get("day"):
         day = overrides["day"]
         level_rules = global_rules.get(day, level_rules)
 
-    # fusiona
     forbidden = (overrides.get("forbidden") or [])
     must_cover = (overrides.get("must_cover") or [])
     tips_extra = (overrides.get("tips_extra") or [])
@@ -145,7 +134,6 @@ def make_report(ex_dir: Path, files, global_rules):
             tools |= detect_tools(code)
             forbidden_hits.extend(check_forbidden(code, forbidden))
 
-    # de-duplicar
     def uniq(seq): return list(dict.fromkeys(seq))
     tips = uniq(tips + tips_extra)
     forbidden_hits = uniq(forbidden_hits)
@@ -159,7 +147,6 @@ def make_report(ex_dir: Path, files, global_rules):
         out_md.append("**Debe cubrir:** " + "; ".join(must_cover))
     if forbidden:
         out_md.append("**Evitar:** " + "; ".join(forbidden))
-
     out_md.append("\n## Revisión y mejoras propuestas")
     if tips:
         for i, t in enumerate(tips, 1):
@@ -183,7 +170,6 @@ def make_report(ex_dir: Path, files, global_rules):
     report_path = REPORT_DIR / f"{ex_dir.name}_report.md"
     report_path.write_text("\n".join(out_md), encoding="utf-8")
 
-    # datos para el PDF
     return report_path, {
         "title": title,
         "tips": [t for t in tips][:5],
@@ -206,8 +192,7 @@ def generate_week_pdf(items):
         c.drawString(2*cm, y, txt)
         y -= dy
         if y < 2*cm:
-            c.showPage()
-            y = h - 2*cm
+            c.showPage(); y = h - 2*cm
 
     line("Resumen semanal — 100 Days of Code")
     line(f"Fecha: {today}", 20)
@@ -222,15 +207,13 @@ def generate_week_pdf(items):
             counter[tl] += 1
 
     if counter:
-        line("", 18)
-        line("Herramientas más usadas:", 18)
+        line("", 18); line("Herramientas más usadas:", 18)
         for k, v in sorted(counter.items(), key=lambda x: -x[1]):
             line(f"• {k}: {v}", 14)
 
     line("", 18)
     line("Motivación: " + MOTIVATION[datetime.date.today().isocalendar().week % len(MOTIVATION)], 18)
-    c.showPage()
-    c.save()
+    c.showPage(); c.save()
     return out
 
 def main():
@@ -239,15 +222,28 @@ def main():
     grouped = collect_exercises(changed)
 
     items = []
+    processed_lines = []
+    today = datetime.date.today().isoformat()
+
     for ex_dir, files in sorted(grouped.items(), key=lambda x: x[0].name):
         report_path, item = make_report(ex_dir, files, global_rules)
         items.append(item)
+        processed_lines.append(f"{item['title']} | {today}")
 
+    # Generar PDF si hubo ítems
     if items:
         generate_week_pdf(items)
         print(f"Reports: {len(items)} — PDF generado.")
     else:
         print("No hay ejercicios nuevos esta semana.")
+
+    # Guardar el resumen para el email simple
+    if processed_lines:
+        SUMMARY_FILE.write_text("\n".join(processed_lines), encoding="utf-8")
+        print("Procesados:\n" + "\n".join(processed_lines))
+    else:
+        # Asegura que exista el fichero (para el paso del workflow)
+        SUMMARY_FILE.write_text("No se detectaron ejercicios esta semana.", encoding="utf-8")
 
 if __name__ == "__main__":
     main()
