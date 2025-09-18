@@ -7,16 +7,8 @@
 - **Legibilidad:** nombres claros, funciones pequeñas, comentarios puntuales.
 
 ## Hallazgos
-### Docstrings (pydocstyle)
-- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_03/infinite_tower_maze.py:1 at module level:
--         D205: 1 blank line required between summary line and description (found 0)
-- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_03/infinite_tower_maze.py:1 at module level:
--         D209: Multi-line docstring closing quotes should be on a separate line
-- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_03/infinite_tower_maze.py:78 in public function `reset_player`:
--         D103: Missing docstring in public function
-
 ### Complejidad (Radon)
-- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_03/infinite_tower_maze.py:78 CC=1 (function) reset_player
+- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_03/infinite_tower_maze.py:82 CC=1 (function) reset_player
 
 ## Refactor propuesto (acorde al nivel)
 - Divide en funciones pequeñas con nombres verbales (`parse_input`, `main`).
