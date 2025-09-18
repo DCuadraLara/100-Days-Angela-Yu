@@ -1,5 +1,9 @@
-"""We gonna create a Infinite Tower Maze, the player will have several choices to go on a way A, B or C.
-You must pick only one."""
+
+"""We gonna create a Infinite Tower Maze.
+
+The player will have several choices to go on a way A, B or C.
+You must pick only one.
+"""
 
 print(r'''
 
@@ -76,6 +80,7 @@ quests = {
 
 # Def reset function
 def reset_player():
+    """Reset player input."""
     return ""
 
 
