@@ -1,0 +1,10 @@
+ruff==0.6.8
+black==24.8.0
+isort==5.13.2
+pydocstyle==6.3.0
+mypy==1.11.2
+bandit==1.7.9
+radon==6.0.1
+pyyaml==6.0.2
+reportlab==4.2.5
+jinja2==3.1.4
