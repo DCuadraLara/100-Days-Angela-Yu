@@ -44,6 +44,12 @@ jobs:
       - name: Run reviewer
         run: python tools/reviewer.py
 
+      - name: Sync with remote (rebase)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin ${{ github.ref_name }}
+
       - name: Commit reports
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
