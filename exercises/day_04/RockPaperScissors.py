@@ -1,5 +1,5 @@
 
-# Rock Paper Scissors game with a creative touch, here you have 3 modes normal - hard - Vsplayer.
+# Rock Paper Scissors game with a creative touch, here you have 3 modes normal - hard - Vsplayer
 
 import random
 
