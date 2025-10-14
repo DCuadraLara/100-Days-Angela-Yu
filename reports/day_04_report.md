@@ -60,8 +60,8 @@ Se recomienda ordenar imports para coherencia.
 Would fix 3 errors (6 additional fixes available with `--unsafe-fixes`).
 
 # isort
---- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py:before	2025-10-14 18:22:56.290874
-+++ /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py:after	2025-10-14 18:23:08.726247
+--- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py:before	2025-10-14 18:45:39.482460
++++ /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py:after	2025-10-14 18:45:53.370653
 @@ -2,6 +2,7 @@
  # Rock Paper Scissors game with a creative touch, here you have 3 modes normal - hard - Vsplayer
  
@@ -72,8 +72,8 @@ Would fix 3 errors (6 additional fixes available with `--unsafe-fixes`).
  def ascii_print(choice_num):
 
 # Black
---- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py	2025-10-14 18:22:56.290874+00:00
-+++ /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py	2025-10-14 18:23:08.621025+00:00
+--- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py	2025-10-14 18:45:39.482460+00:00
++++ /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_04/RockPaperScissors.py	2025-10-14 18:45:53.063897+00:00
 @@ -1,48 +1,57 @@
 -
  # Rock Paper Scissors game with a creative touch, here you have 3 modes normal - hard - Vsplayer
@@ -255,7 +255,7 @@ Success: no issues found in 1 source file
 ```
 ## Seguridad (Bandit)
 ```text
-Run started:2025-10-14 18:23:09.471392
+Run started:2025-10-14 18:45:55.371976
 
 Test results:
 >> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
