@@ -1,20 +1,43 @@
 # day_02 — Code Review (Nivel Día 2)
 
 ## Resumen ejecutivo
-- **Correctness:** verificado a simple vista; revisar entradas/salidas y casos borde.
-- **Estilo/PEP8:** ver sección de *Estilo (Ruff/Black)*.
-- **Robustez:** maneja errores explícitos cuando interactúe con `input()` o archivos.
+- **Correctness:** revisar entradas/salidas y casos borde.
+- **Estilo/PEP8:** ver sección de *Estilo (Ruff/Black/Isort)*.
+- **Robustez:** maneja errores explícitos cuando haya `input()` o archivos.
 - **Legibilidad:** nombres claros, funciones pequeñas, comentarios puntuales.
 
 ## Recomendaciones niveladas
 1. Normaliza la entrada con `.strip()` y considera `.lower()`.
 
-## Refactor propuesto (acorde al nivel)
-- Divide en funciones pequeñas con nombres verbales (`parse_input`, `main`).
-- Usa f-strings cuando presentes resultados (https://docs.python.org/3/reference/lexical_analysis.html#f-strings).
-- Añade validación suave de entradas (`.strip().lower()`).
+## Correcciones sugeridas (diffs no destructivos)
+```diff
+# Black
+--- /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_02/tip_calculator.py	2025-10-14 18:22:56.290874+00:00
++++ /home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_02/tip_calculator.py	2025-10-14 18:23:06.759476+00:00
+@@ -4,6 +4,6 @@
+ bill = 150.00
+ 
+ print("Welcome to the tip calculator!")
+ people = int(input("Number of people: "))
+ split_bill = (bill / people) * 1.12
+-print(f"Each person should pay:{split_bill:.2f} Dollars") # split_bill:2f shows 2 decimates.
++print(f"Each person should pay:{split_bill:.2f} Dollars")  # split_bill:2f shows 2 decimates.
 
-## Próximos pasos
-- Re-ejecuta tras aplicar formato y correcciones de estilo.
-- Cubre al menos 2 casos borde (entrada vacía / valor inesperado).
-- Revisa PEP 8: https://peps.python.org/pep-0008/
+```
+## Explicación de reglas detectadas
+_Sin hallazgos destacables_.
+
+## Tipado estático (mypy)
+```text
+Success: no issues found in 1 source file
+
+```
+## Seguridad (Bandit)
+```text
+n/a
+```
+## Mantenibilidad (Radon MI)
+```text
+/home/runner/work/100-Days-Angela-Yu/100-Days-Angela-Yu/exercises/day_02/tip_calculator.py - A (100.00)
+
+```
