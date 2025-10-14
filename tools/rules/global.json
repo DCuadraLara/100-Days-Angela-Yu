@@ -1,52 +1,142 @@
 {
   "1": {
-    "allowed": ["print", "input", "f-strings", "if-else"],
-    "avoid": ["comprehensions", "try-except complejo"],
-    "focus": ["nombres claros", "mensajes de input", "branching simple"]
+    "allowed": ["print", "input", "variables", "if-else", "f-strings"],
+    "avoid": ["comprehensions", "clases", "decorators"],
+    "forbidden": [],
+    "must_cover": ["nombres claros", "mensajes de input", "branching simple", "formato de salida"],
+    "tips_extra": ["Prefiere f-strings a concatenaciones", "Evita lógica en una sola línea si reduce legibilidad"]
   },
   "2": {
-    "allowed": ["if-elif-else", "operadores", "f-strings"],
-    "avoid": ["estructuras avanzadas"],
-    "focus": ["validación simple de input", "operadores lógicos"]
+    "allowed": ["if-elif-else", "operadores lógicos", "comparaciones"],
+    "avoid": ["expresiones ternarias complejas"],
+    "forbidden": [],
+    "must_cover": ["validación básica de input", "operadores lógicos AND/OR/NOT", "casos borde simples"],
+    "tips_extra": ["Normaliza entradas con .strip()", "Usa .lower() para comparaciones de texto"]
   },
   "3": {
-    "allowed": ["listas", "funciones pequeñas", "módulo %"],
-    "avoid": ["diccionarios avanzados", "clases"],
-    "focus": ["dividir en funciones", "usar % correctamente (piedra-papel-tijera)"]
+    "allowed": ["funciones pequeñas", "return", "listas", "módulo random"],
+    "avoid": ["clases", "diccionarios avanzados"],
+    "forbidden": [],
+    "must_cover": ["dividir en funciones", " parámetros y retorno", "uso correcto de % en juegos (RPS)"],
+    "tips_extra": ["Funciones con responsabilidad única", "Nombres de función verbales (calc_total, parse_input)"]
   },
   "4": {
-    "allowed": ["for/while", "dict/set básicos"],
-    "avoid": ["list/dict comprehensions complejas"],
-    "focus": ["bucles claros", "evitar while True sin salida"]
+    "allowed": ["for", "while", "range", "dict/set básicos"],
+    "avoid": ["while True sin salida", "comprehensions anidadas"],
+    "forbidden": [],
+    "must_cover": ["bucles claros", "control de flujo", "evitar bucles infinitos"],
+    "tips_extra": ["Usa enumerate() en vez de contadores manuales", "Rompe bucles con condiciones explícitas"]
   },
   "5": {
-    "allowed": ["funciones con return", "docstrings cortos"],
+    "allowed": ["docstrings cortos", "módulos propios", "constantes (UPPER_CASE)"],
     "avoid": ["manejo de errores complejo"],
-    "focus": ["single-responsibility", "nombres de función verbales"]
+    "forbidden": [],
+    "must_cover": ["docstrings de función", "nombres y constantes", "estructura mínima de archivo"],
+    "tips_extra": ["Docstrings estilo Google/Numpy", "Comentarios solo cuando aporten contexto"]
   },
   "6": {
-    "allowed": ["try/except sencillo", "validación robusta"],
-    "avoid": ["capturar Exception genérico"],
-    "focus": ["mensajes de error útiles", "paths felices y de error"]
+    "allowed": ["try-except simple", "raise", "validación robusta"],
+    "avoid": ["capturar Exception genérico", "try-except vacíos"],
+    "forbidden": [],
+    "must_cover": ["rutas felices y de error", "mensajes de error útiles", "except específicos (ValueError)"],
+    "tips_extra": ["Agrupa validaciones en funciones", "Evita silenciar errores"]
   },
   "7": {
-    "allowed": ["list comprehensions (intro)"],
-    "avoid": ["anidadas/decoradores"],
-    "focus": ["claridad sobre ‘cleverness’"]
+    "allowed": ["list comprehensions simples", "any/all"],
+    "avoid": ["comprehensions anidadas", "generator expressions complejas"],
+    "forbidden": [],
+    "must_cover": ["equilibrio entre claridad y ‘cleverness’", "sustituir bucles sencillos por comprehensions"],
+    "tips_extra": ["Prefiere claridad a ‘one-liners’", "Evita efectos secundarios dentro de comprehensions"]
   },
   "8": {
-    "allowed": ["file I/O básico (open/read/write)"],
-    "avoid": ["csv/json avanzados"],
-    "focus": ["cerrar archivos", "with context manager"]
+    "allowed": ["file I/O (open/read/write)", "with context manager", "pathlib"],
+    "avoid": ["lecturas gigantes en memoria"],
+    "forbidden": [],
+    "must_cover": ["with para cierre automático", "codificación utf-8", "manejo de errores de archivo"],
+    "tips_extra": ["Usa pathlib en vez de os.path", "Escribe funciones puras para transformar datos"]
   },
   "9": {
-    "allowed": ["módulos e imports básicos"],
-    "avoid": ["packaging complejo"],
-    "focus": ["reutilización", "separar lógica de ejecución"]
+    "allowed": ["módulos e imports", "estructura /exercises/day_xx"],
+    "avoid": ["import *", "ciclos de import"],
+    "forbidden": [],
+    "must_cover": ["separar lógica de ejecución (if __name__ == '__main__')", "reutilización entre archivos"],
+    "tips_extra": ["Imports al inicio, ordenados", "Evita side-effects al importar"]
   },
   "10": {
-    "allowed": ["estructura mínima de proyecto"],
-    "avoid": ["frameworks"],
-    "focus": ["organización carpetas", "nombrado consistente"]
+    "allowed": ["estructura mínima de proyecto", "README básico"],
+    "avoid": ["frameworks", "paquetería compleja"],
+    "forbidden": [],
+    "must_cover": ["organización de carpetas", "nombres consistentes", "scripts de ejemplo"],
+    "tips_extra": ["Añade instrucciones de ejecución", "Incluye ejemplos de entrada/salida en README"]
+  },
+  "11": {
+    "allowed": ["type hints básicos", "typing.Optional", "-> None"],
+    "avoid": ["tipados excesivos en prototipos simples"],
+    "forbidden": [],
+    "must_cover": ["anotar parámetros y retornos", "beneficios del tipado"],
+    "tips_extra": ["Añade tipos gradualmente", "Usa mypy con --ignore-missing-imports"]
+  },
+  "12": {
+    "allowed": ["tests básicos (pytest) sin fixtures complejos"],
+    "avoid": ["mocks avanzados"],
+    "forbidden": [],
+    "must_cover": ["testear funciones puras", "nombres de test claros", "casos borde"],
+    "tips_extra": ["AAA (Arrange-Act-Assert)", "Un test por comportamiento"]
+  },
+  "13": {
+    "allowed": ["logging básico", "niveles INFO/ERROR"],
+    "avoid": ["prints para diagnóstico en código de librería"],
+    "forbidden": [],
+    "must_cover": ["configuración básica de logging", "mensajes accionables"],
+    "tips_extra": ["Evita logs ruidosos", "Incluye contexto en el mensaje (inputs clave)"]
+  },
+  "14": {
+    "allowed": ["JSON (json)", "YAML (safe_load)", "config por archivo"],
+    "avoid": ["eval para parsear datos"],
+    "forbidden": ["eval", "exec"],
+    "must_cover": ["cargar configuración", "validar campos requeridos"],
+    "tips_extra": ["Separa config de código", "Valida tipos y valores"]
+  },
+  "15": {
+    "allowed": ["argparse (CLI)"],
+    "avoid": ["parsers anidados complejos"],
+    "forbidden": [],
+    "must_cover": ["interfaz de línea de comandos", "mensajes de ayuda", "valores por defecto"],
+    "tips_extra": ["Provee --help útil", "Errores de CLI deben ser claros y cortos"]
+  },
+  "16": {
+    "allowed": ["requests simple", "timeout", "manejo de errores HTTP"],
+    "avoid": ["reintentos sin límite", "bloqueos por falta de timeout"],
+    "forbidden": [],
+    "must_cover": ["GET/POST básicos", "timeouts", "manejo de códigos de estado"],
+    "tips_extra": ["Usa session si hay múltiples llamadas", "No expongas tokens en el repo"]
+  },
+  "17": {
+    "allowed": ["refactor modular", "utilidades comunes"],
+    "avoid": ["funciones de >25-30 líneas"],
+    "forbidden": [],
+    "must_cover": ["SRP a nivel de módulo", "reutilización sin duplicar lógica"],
+    "tips_extra": ["Extrae helpers reutilizables", "Reduce parámetros con objetos de configuración"]
+  },
+  "18": {
+    "allowed": ["métricas de complejidad (Radon)", "medir mantenibilidad"],
+    "avoid": ["optimización prematura"],
+    "forbidden": [],
+    "must_cover": ["interpretar CC y MI", "plan de reducción de complejidad"],
+    "tips_extra": ["Divide funciones complejas", "Nombra mejor para bajar complejidad cognitiva"]
+  },
+  "19": {
+    "allowed": ["seguridad básica (Bandit)", "validación de entrada"],
+    "avoid": ["capturar Exception y continuar"],
+    "forbidden": ["os.system sin validación", "subprocess sin shell=False"],
+    "must_cover": ["riesgos comunes (eval/exec)", "path traversal", "manejo seguro de secretos"],
+    "tips_extra": ["Usa variables de entorno para secretos", "Nunca subas .env al repo"]
+  },
+  "20": {
+    "allowed": ["formato automático (Black)", "orden de imports (isort)", "lint (Ruff)"],
+    "avoid": ["reglas contradictorias entre herramientas"],
+    "forbidden": [],
+    "must_cover": ["aplicar formato consistente", "resolver avisos de Ruff", "pipeline local de calidad"],
+    "tips_extra": ["Integra pre-commit", "Deja configurado pyproject.toml con line-length y perfiles"]
   }
 }
