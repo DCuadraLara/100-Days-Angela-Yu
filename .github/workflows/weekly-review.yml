@@ -7,7 +7,7 @@ on:
       - "exercises/**"
       - "tools/**"
       - "pyproject.toml"
-      - "requirements-report.txt"
+      - "requirements.txt"
   schedule:
     # GitHub usa UTC. 05:00 UTC ≈ 07:00 en Madrid (cuando hay horario de verano);
     # en invierno será 06:00 UTC ≈ 07:00 Madrid. Ajusta si quieres hora exacta.
