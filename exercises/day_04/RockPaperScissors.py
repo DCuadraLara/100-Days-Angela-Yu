@@ -1,13 +1,7 @@
+
+# Rock Paper Scissors game with a creative touch, here you have 3 modes normal - hard - Vsplayer.
+
 import random
-
-# We introduce game and mode selection.
-print("\n*** Welcome to our Rock Paper Scissors Game!! ***\n")
-print(" -------------\n")
-
-
-# Choice list.
-choice_list = ["Rock", "Paper", "Scissors"]
-
 
 # Win condition function.
 def ascii_print(choice_num):
@@ -56,9 +50,18 @@ def win_condition(player, ia):
     else:
         return "--- IA WINS ---"
 
+
 def normalize_num(number):
     return number - 1
 
+
+# We introduce game and mode selection.
+print("\n*** Welcome to our Rock Paper Scissors Game!! ***\n")
+print(" -------------\n")
+
+
+# Choice list.
+choice_list = ["Rock", "Paper", "Scissors"]
 
 while True:
     try:
