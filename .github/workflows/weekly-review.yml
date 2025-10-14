@@ -7,9 +7,16 @@ on:
       - "exercises/**"
       - "tools/**"
       - "pyproject.toml"
+      - "requirements-report.txt"
   schedule:
-    - cron: "0 7 * * 1"   # Lunes 07:00 Europe/Madrid
+    # GitHub usa UTC. 05:00 UTC ≈ 07:00 en Madrid (cuando hay horario de verano);
+    # en invierno será 06:00 UTC ≈ 07:00 Madrid. Ajusta si quieres hora exacta.
+    - cron: "0 5 * * 1"
   workflow_dispatch:
+
+concurrency:
+  group: reviewer-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -18,8 +25,10 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (full history)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -37,8 +46,8 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          # (Opcional) Pandoc si conviertes Markdown a PDF:
+          pip install -r requirements-report.txt
+          # Si convertirás MD->PDF con Pandoc (opcional):
           # sudo apt-get update -y && sudo apt-get install -y pandoc
 
       - name: Run reviewer
@@ -48,7 +57,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin ${{ github.ref_name }}
+          git pull --rebase origin ${{ github.ref_name }} || true
 
       - name: Commit reports
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -58,6 +67,7 @@ jobs:
           file_pattern: |
             reports/*.md
             pdf_report_weekly/*.pdf
+          push_options: --force-with-lease
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -66,3 +76,4 @@ jobs:
           path: |
             reports/
             pdf_report_weekly/
+
