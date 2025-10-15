@@ -79,11 +79,7 @@ while True:
 
         while True:
             try:
-                mode = int(
-                    input(
-                        "1. Normal Mode.\n2. Impossible Mode.\n3. VsPlayer.\n\n"
-                    )
-                )
+                mode = int(input("1. Normal Mode.\n2. Impossible Mode.\n3. VsPlayer.\n\n"))
 
                 if mode in (1, 2, 3):
                     break
@@ -177,8 +173,8 @@ while True:
                     )
                 )
 
-                if player_1 in (1, 2, 3) and player_2 in (1, 2,
-                                                          3):  # Check player hand as a valid answer to break Loop.
+                if player_1 in (1, 2, 3) and player_2 in (1, 2, 3):  # Check player hand as a valid answer to break Loop.
+                    
                     print("----------------------------")
                     print("\nThe player 1 hero hand is... \n")
                     player_1 = normalize_num(player_1)
